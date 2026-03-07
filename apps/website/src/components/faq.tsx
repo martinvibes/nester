@@ -178,12 +178,19 @@ function FaqItem({
     >
       <div
         onClick={onToggle}
-        className={`group cursor-pointer border transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-2xl overflow-hidden ${
+        className={`group cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-2xl ${
           isOpen
-            ? "border-black/20 bg-white/60 shadow-sm"
-            : "border-black/[0.07] bg-white/[0.02] hover:border-black/[0.18] hover:bg-white/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.03)]"
+            ? "gradient-border-active gradient-border-lg shadow-sm"
+            : ""
         }`}
       >
+        <div
+          className={`border rounded-2xl overflow-visible transition-all duration-300 ${
+            isOpen
+              ? "border-transparent bg-white/60"
+              : "border-black/[0.07] bg-white/[0.02] group-hover:border-black/[0.18] group-hover:bg-white/30 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.03)]"
+          }`}
+        >
         {/* Question row */}
         <div className="flex items-start gap-4 px-6 md:px-8 py-5 md:py-6">
           {/* Classification badge */}
@@ -282,6 +289,7 @@ function FaqItem({
             </div>
           </div>
         </motion.div>
+        </div>
       </div>
     </motion.div>
   );

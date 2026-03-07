@@ -145,7 +145,6 @@ const R = 22          // px — clearly visible rounded inner corners
 
 // widths decrease dramatically: 48% → 34% → 21% → 9%
 const STEPS = ["48%", "34%", "21%", "9%"]
-const TOTAL_NOTCH_H = STEP_H * STEPS.length // 272px
 
 const col1 = [0, 3, 6, 9].map(i => projects[i])
 const col2 = [1, 4, 7, 10].map(i => projects[i])
@@ -222,11 +221,11 @@ export function Ecosystem() {
 
                 {/* Left text panel */}
                 <div className="lg:w-[40%] flex flex-col justify-center gap-8
-                                px-8 pt-8 pb-12
+                                px-8 pt-12 pb-12
                                 md:px-14 md:pb-16
                                 lg:pb-24 lg:px-16
-                                border-b lg:border-b-0 border-white/[0.07]"
-                    style={{ paddingTop: `calc(${TOTAL_NOTCH_H}px + 3rem)` }}>
+                                border-b lg:border-b-0 border-white/[0.07]
+                                ecosystem-text-panel">
                     <div>
                         <p className="text-white/40 text-xs tracking-[0.2em] uppercase font-medium mb-4">
                             Ecosystem

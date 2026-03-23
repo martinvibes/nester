@@ -195,6 +195,22 @@ func (r *handlerRepository) UpdateVaultBalances(_ context.Context, id uuid.UUID,
 	return nil
 }
 
+func (r *handlerRepository) RecordDeposit(_ context.Context, id uuid.UUID, amount decimal.Decimal) error {
+	model, ok := r.vaults[id]
+	if !ok {
+		return vault.ErrVaultNotFound
+	}
+	if amount.Cmp(decimal.Zero) <= 0 {
+		return vault.ErrInvalidAmount
+	}
+
+	model.TotalDeposited = model.TotalDeposited.Add(amount)
+	model.CurrentBalance = model.CurrentBalance.Add(amount)
+	model.UpdatedAt = time.Now().UTC()
+	r.vaults[id] = cloneHandlerVault(model)
+	return nil
+}
+
 func (r *handlerRepository) ReplaceAllocations(_ context.Context, vaultID uuid.UUID, allocations []vault.Allocation) error {
 	model, ok := r.vaults[vaultID]
 	if !ok {

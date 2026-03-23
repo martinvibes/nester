@@ -84,16 +84,11 @@ func (s *VaultService) RecordDeposit(ctx context.Context, input RecordDepositInp
 	if input.Amount.Cmp(decimal.Zero) <= 0 {
 		return vault.Vault{}, vault.ErrInvalidAmount
 	}
-
-	currentVault, err := s.repository.GetVault(ctx, input.VaultID)
-	if err != nil {
-		return vault.Vault{}, err
+	if decimalScale(input.Amount) > vault.MaxAmountScale {
+		return vault.Vault{}, vault.ErrInvalidPrecision
 	}
 
-	totalDeposited := currentVault.TotalDeposited.Add(input.Amount)
-	currentBalance := currentVault.CurrentBalance.Add(input.Amount)
-
-	if err := s.repository.UpdateVaultBalances(ctx, input.VaultID, totalDeposited, currentBalance); err != nil {
+	if err := s.repository.RecordDeposit(ctx, input.VaultID, input.Amount); err != nil {
 		return vault.Vault{}, err
 	}
 
@@ -111,6 +106,9 @@ func (s *VaultService) UpdateAllocations(ctx context.Context, input UpdateAlloca
 	for _, allocation := range input.Allocations {
 		if strings.TrimSpace(allocation.Protocol) == "" || allocation.Amount.Cmp(decimal.Zero) < 0 || allocation.APY.Cmp(decimal.Zero) < 0 {
 			return vault.Vault{}, vault.ErrInvalidAllocation
+		}
+		if decimalScale(allocation.Amount) > vault.MaxAmountScale || decimalScale(allocation.APY) > vault.MaxAPYScale {
+			return vault.Vault{}, vault.ErrInvalidPrecision
 		}
 
 		if allocation.ID == uuid.Nil {
@@ -130,4 +128,12 @@ func (s *VaultService) UpdateAllocations(ctx context.Context, input UpdateAlloca
 	}
 
 	return s.repository.GetVault(ctx, input.VaultID)
+}
+
+func decimalScale(value decimal.Decimal) int32 {
+	exponent := value.Exponent()
+	if exponent >= 0 {
+		return 0
+	}
+	return -exponent
 }

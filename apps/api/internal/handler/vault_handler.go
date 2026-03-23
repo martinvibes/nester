@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -11,6 +12,8 @@ import (
 	"github.com/suncrestlabs/nester/apps/api/internal/service"
 	logpkg "github.com/suncrestlabs/nester/apps/api/pkg/logger"
 )
+
+const maxRequestBodyBytes int64 = 1 << 20
 
 type VaultHandler struct {
 	service *service.VaultService
@@ -111,9 +114,17 @@ func (h *VaultHandler) writeDomainError(w http.ResponseWriter, r *http.Request, 
 }
 
 func decodeJSON(r *http.Request, destination any) error {
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(io.LimitReader(r.Body, maxRequestBodyBytes))
 	decoder.DisallowUnknownFields()
-	return decoder.Decode(destination)
+	if err := decoder.Decode(destination); err != nil {
+		return err
+	}
+
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return errors.New("request body must contain only one JSON object")
+	}
+
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

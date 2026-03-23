@@ -24,6 +24,12 @@ var (
 	ErrInvalidVault      = errors.New("invalid vault input")
 	ErrInvalidAmount     = errors.New("amount must be greater than zero")
 	ErrInvalidAllocation = errors.New("invalid allocation input")
+	ErrInvalidPrecision  = errors.New("decimal precision exceeds supported scale")
+)
+
+const (
+	MaxAmountScale = int32(8)
+	MaxAPYScale    = int32(4)
 )
 
 type Vault struct {
@@ -52,6 +58,7 @@ type Repository interface {
 	CreateVault(ctx context.Context, model Vault) (Vault, error)
 	GetVault(ctx context.Context, id uuid.UUID) (Vault, error)
 	GetUserVaults(ctx context.Context, userID uuid.UUID) ([]Vault, error)
+	RecordDeposit(ctx context.Context, id uuid.UUID, amount decimal.Decimal) error
 	UpdateVaultBalances(ctx context.Context, id uuid.UUID, totalDeposited decimal.Decimal, currentBalance decimal.Decimal) error
 	ReplaceAllocations(ctx context.Context, vaultID uuid.UUID, allocations []Allocation) error
 }

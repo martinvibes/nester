@@ -76,6 +76,39 @@ func TestVaultServiceCreateVaultReturnsUserNotFound(t *testing.T) {
 	}
 }
 
+func TestVaultServiceRejectsExcessiveDecimalScale(t *testing.T) {
+	userID := uuid.New()
+	repository := newMemoryVaultRepository(userID)
+	service := NewVaultService(repository)
+
+	created, err := service.CreateVault(context.Background(), CreateVaultInput{
+		UserID:          userID,
+		ContractAddress: "CA123",
+		Currency:        "USDC",
+	})
+	if err != nil {
+		t.Fatalf("CreateVault() error = %v", err)
+	}
+
+	_, err = service.RecordDeposit(context.Background(), RecordDepositInput{
+		VaultID: created.ID,
+		Amount:  decimal.RequireFromString("1.123456789"),
+	})
+	if err != vault.ErrInvalidPrecision {
+		t.Fatalf("expected ErrInvalidPrecision, got %v", err)
+	}
+
+	_, err = service.UpdateAllocations(context.Background(), UpdateAllocationsInput{
+		VaultID: created.ID,
+		Allocations: []vault.Allocation{
+			{Protocol: "aave", Amount: decimal.RequireFromString("1"), APY: decimal.RequireFromString("1.12345")},
+		},
+	})
+	if err != vault.ErrInvalidPrecision {
+		t.Fatalf("expected ErrInvalidPrecision for APY scale, got %v", err)
+	}
+}
+
 type memoryVaultRepository struct {
 	users  map[uuid.UUID]struct{}
 	vaults map[uuid.UUID]vault.Vault
@@ -132,6 +165,22 @@ func (r *memoryVaultRepository) UpdateVaultBalances(_ context.Context, id uuid.U
 
 	model.TotalDeposited = totalDeposited
 	model.CurrentBalance = currentBalance
+	model.UpdatedAt = time.Now().UTC()
+	r.vaults[id] = cloneVault(model)
+	return nil
+}
+
+func (r *memoryVaultRepository) RecordDeposit(_ context.Context, id uuid.UUID, amount decimal.Decimal) error {
+	model, ok := r.vaults[id]
+	if !ok {
+		return vault.ErrVaultNotFound
+	}
+	if amount.Cmp(decimal.Zero) <= 0 {
+		return vault.ErrInvalidAmount
+	}
+
+	model.TotalDeposited = model.TotalDeposited.Add(amount)
+	model.CurrentBalance = model.CurrentBalance.Add(amount)
 	model.UpdatedAt = time.Now().UTC()
 	r.vaults[id] = cloneVault(model)
 	return nil

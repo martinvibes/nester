@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -150,6 +151,53 @@ func TestVaultRepositoryIntegrationEdgeCases(t *testing.T) {
 	})
 	if err != vault.ErrUserNotFound {
 		t.Fatalf("expected ErrUserNotFound, got %v", err)
+	}
+}
+
+func TestVaultRepositoryIntegrationRecordDepositConcurrent(t *testing.T) {
+	db := openIntegrationDB(t)
+	applyIntegrationMigrations(t, db)
+	resetIntegrationTables(t, db)
+
+	repository := NewVaultRepository(db)
+	ctx := context.Background()
+	userID := seedIntegrationUser(t, db)
+
+	created, err := repository.CreateVault(ctx, vault.Vault{
+		ID:              uuid.New(),
+		UserID:          userID,
+		ContractAddress: "CA-INT-RACE",
+		TotalDeposited:  decimal.Zero,
+		CurrentBalance:  decimal.Zero,
+		Currency:        "USDC",
+		Status:          vault.StatusActive,
+	})
+	if err != nil {
+		t.Fatalf("CreateVault() error = %v", err)
+	}
+
+	var wg sync.WaitGroup
+	deposit := func() {
+		defer wg.Done()
+		if err := repository.RecordDeposit(ctx, created.ID, decimal.RequireFromString("10")); err != nil {
+			t.Errorf("RecordDeposit() error = %v", err)
+		}
+	}
+
+	wg.Add(2)
+	go deposit()
+	go deposit()
+	wg.Wait()
+
+	fetched, err := repository.GetVault(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("GetVault() error = %v", err)
+	}
+	if !fetched.TotalDeposited.Equal(decimal.RequireFromString("20")) {
+		t.Fatalf("expected total deposited 20, got %s", fetched.TotalDeposited)
+	}
+	if !fetched.CurrentBalance.Equal(decimal.RequireFromString("20")) {
+		t.Fatalf("expected current balance 20, got %s", fetched.CurrentBalance)
 	}
 }
 

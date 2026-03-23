@@ -51,10 +51,8 @@ func run() error {
 	vaultHandler := handler.NewVaultHandler(vaultService)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	})
+	mux.HandleFunc("GET /health", healthHandler(db, cfg.Database().ConnectionTimeout()))
+	mux.HandleFunc("GET /healthz", healthHandler(db, cfg.Database().ConnectionTimeout()))
 	vaultHandler.Register(mux)
 
 	server := &http.Server{
@@ -128,4 +126,19 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func healthHandler(db *sql.DB, timeout time.Duration) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		if err := db.PingContext(ctx); err != nil {
+			http.Error(w, "database unavailable", http.StatusServiceUnavailable)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}
 }

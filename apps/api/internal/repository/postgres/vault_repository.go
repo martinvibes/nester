@@ -129,6 +129,36 @@ func (r *VaultRepository) UpdateVaultBalances(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
+func (r *VaultRepository) RecordDeposit(ctx context.Context, id uuid.UUID, amount decimal.Decimal) error {
+	if amount.Cmp(decimal.Zero) <= 0 {
+		return vault.ErrInvalidAmount
+	}
+
+	result, err := r.db.ExecContext(
+		ctx,
+		`UPDATE vaults
+		 SET total_deposited = total_deposited + $2::numeric,
+		     current_balance = current_balance + $2::numeric,
+		     updated_at = NOW()
+		 WHERE id = $1`,
+		id.String(),
+		amount.String(),
+	)
+	if err != nil {
+		return mapRepositoryError(err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return vault.ErrVaultNotFound
+	}
+
+	return nil
+}
+
 func (r *VaultRepository) ReplaceAllocations(ctx context.Context, vaultID uuid.UUID, allocations []vault.Allocation) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {

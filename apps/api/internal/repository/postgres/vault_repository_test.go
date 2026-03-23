@@ -47,6 +47,29 @@ func TestCreateVaultMapsForeignKeyViolationToUserNotFound(t *testing.T) {
 	}
 }
 
+func TestRecordDepositUpdatesBalancesAtomically(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New() error = %v", err)
+	}
+	defer db.Close()
+
+	repository := NewVaultRepository(db)
+	vaultID := uuid.New()
+
+	mock.ExpectExec(regexp.QuoteMeta(`UPDATE vaults
+		 SET total_deposited = total_deposited + $2::numeric,
+		     current_balance = current_balance + $2::numeric,
+		     updated_at = NOW()
+		 WHERE id = $1`)).
+		WithArgs(vaultID.String(), "25.5").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	if err := repository.RecordDeposit(context.Background(), vaultID, decimal.RequireFromString("25.5")); err != nil {
+		t.Fatalf("RecordDeposit() error = %v", err)
+	}
+}
+
 func TestGetVaultLoadsAllocations(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {

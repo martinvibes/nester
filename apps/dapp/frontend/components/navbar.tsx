@@ -51,14 +51,24 @@ export function Navbar() {
         return () => document.removeEventListener("click", handleClick);
     }, [showMenu]);
 
-    // Lock body scroll when mobile menu is open
     useEffect(() => {
+        const html = document.documentElement;
         if (showMobileMenu) {
-            document.body.style.overflow = "hidden";
+            html.classList.add("menu-open");
         } else {
-            document.body.style.overflow = "";
+            html.classList.remove("menu-open");
         }
-        return () => { document.body.style.overflow = ""; };
+        return () => html.classList.remove("menu-open");
+    }, [showMobileMenu]);
+
+    // Close mobile menu on Escape key for keyboard-only users
+    useEffect(() => {
+        if (!showMobileMenu) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setShowMobileMenu(false);
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
     }, [showMobileMenu]);
 
     const copyAddress = (e: React.MouseEvent) => {
@@ -244,6 +254,9 @@ export function Navbar() {
                             exit={{ x: "100%" }}
                             transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}
                             className="fixed top-0 right-0 bottom-0 z-[70] w-[min(320px,90vw)] bg-white shadow-2xl flex flex-col"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Navigation menu"
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
@@ -306,7 +319,7 @@ export function Navbar() {
                                                     : "text-foreground/70 hover:bg-secondary hover:text-foreground"
                                             )}
                                         >
-                                            <item.icon className="h-4.5 w-4.5 shrink-0" />
+                                            <item.icon className="h-[18px] w-[18px] shrink-0" />
                                             {item.label}
                                         </Link>
                                     </motion.div>
@@ -332,7 +345,7 @@ export function Navbar() {
                 )}
             </AnimatePresence>
 
-            {/* ── Bottom Tab Bar (mobile, connected only) ── */}
+            {/* ── Bottom Tab Bar*/}
             {isConnected && (
                 <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-border safe-area-pb">
                     <div className="flex items-center justify-around px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">

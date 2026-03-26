@@ -2,24 +2,45 @@
 
 import { useWallet } from "@/components/wallet-provider";
 import { Navbar } from "@/components/navbar";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { truncateAddress } from "@/lib/utils";
-import { Sparkles, ArrowRight } from "lucide-react";
+import {
+    TrendingUp,
+    Vault,
+    ArrowDownToLine,
+    Sparkles,
+    ArrowUpRight,
+} from "lucide-react";
 
-// Mock Data
-import { 
-    mockTransactions, 
-    mockVaultPositions, 
-    mockPortfolioStats 
-} from "@/lib/mock-data";
-
-// Components
-import { DashboardStats } from "@/components/dashboard/dashboard-stats";
-import { VaultPositionsTable } from "@/components/dashboard/vault-positions-table";
-import { PortfolioCharts } from "@/components/dashboard/portfolio-charts";
-import { RecentActivity } from "@/components/dashboard/recent-activity";
+const stats = [
+    {
+        label: "Total Balance",
+        value: "$0.00",
+        change: null,
+        icon: Vault,
+    },
+    {
+        label: "Total Yield Earned",
+        value: "$0.00",
+        change: "+0.00%",
+        icon: TrendingUp,
+    },
+    {
+        label: "Active Vaults",
+        value: "0",
+        change: null,
+        icon: ArrowDownToLine,
+    },
+    {
+        label: "Prometheus Insights",
+        value: "—",
+        change: null,
+        icon: Sparkles,
+    },
+];
 
 export default function Dashboard() {
     const { isConnected, address } = useWallet();
@@ -43,6 +64,7 @@ export default function Dashboard() {
             <Navbar />
 
             <main className="mx-auto max-w-[1536px] px-4 md:px-8 lg:px-12 xl:px-16 pt-20 md:pt-28 pb-24 md:pb-16">
+                {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -57,17 +79,14 @@ export default function Dashboard() {
                     </p>
                 </motion.div>
 
-                {/* Stats Grid */}
+                {/* Stats Grid — 2 cols mobile, 4 cols desktop */}
                 <div className="mb-8 md:mb-10 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
                     {stats.map((stat, i) => (
                         <motion.div
                             key={stat.label}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{
-                                duration: 0.5,
-                                delay: 0.1 + i * 0.08,
-                            }}
+                            transition={{ duration: 0.5, delay: 0.1 + i * 0.08 }}
                             className="group rounded-2xl border border-border bg-white p-4 sm:p-5 transition-all hover:border-black/15 hover:shadow-sm"
                         >
                             <div className="mb-3 sm:mb-4 flex items-center justify-between">
@@ -93,6 +112,7 @@ export default function Dashboard() {
 
                 {/* Panels — stacked on mobile, side by side on desktop */}
                 <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+                    {/* Vaults Panel */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -115,8 +135,8 @@ export default function Dashboard() {
                                 No vaults yet
                             </p>
                             <p className="mt-1 max-w-xs text-xs text-muted-foreground leading-relaxed">
-                                Create your first vault to start earning
-                                optimized yield across DeFi protocols.
+                                Create your first vault to start earning optimized
+                                yield across DeFi protocols.
                             </p>
                             <div className="mt-5 p-[3px] rounded-full border border-black/15 shadow-lg bg-white inline-block">
                                 <Link href="/dashboard/vaults">
@@ -155,11 +175,12 @@ export default function Dashboard() {
                                 No insights available
                             </p>
                             <p className="mt-1 max-w-xs text-xs text-muted-foreground leading-relaxed">
-                                Connect a vault to receive AI-driven
-                                recommendations on yield optimization and risk
-                                management.
+                                Connect a vault to receive AI-driven recommendations
+                                on yield optimization and risk management.
                             </p>
                         </div>
+                    </motion.div>
+                </div>
 
                 {/* Recent Activity */}
                 <motion.div
@@ -176,7 +197,7 @@ export default function Dashboard() {
                             No recent transactions
                         </p>
                     </div>
-                </div>
+                </motion.div>
             </main>
         </div>
     );

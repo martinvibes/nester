@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter, Cormorant } from "next/font/google";
 import { PortfolioProvider } from "@/components/portfolio-provider";
 import { WalletProvider } from "@/components/wallet-provider";
+import { NotificationsProvider } from "@/components/notifications-provider";
+import { NotificationsToaster } from "@/components/notifications-toaster";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -43,7 +45,12 @@ export default function RootLayout({
                 className={`${spaceGrotesk.variable} ${inter.variable} ${cormorant.variable} antialiased`}
             >
                 <WalletProvider>
-                    <PortfolioProvider>{children}</PortfolioProvider>
+                    <NotificationsProvider>
+                        <PortfolioProvider>
+                            {children}
+                            <NotificationsToaster />
+                        </PortfolioProvider>
+                    </NotificationsProvider>
                 </WalletProvider>
             </body>
         </html>
